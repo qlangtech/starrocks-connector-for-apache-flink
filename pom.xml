@@ -43,7 +43,7 @@ limitations under the License.
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.starrocks</groupId>
     <artifactId>flink-connector-starrocks</artifactId>
-    <version>tis_v1.2.3_flink-${flink.version}</version>
+    <version>tis_v1.2.3</version>
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -414,12 +414,5 @@ limitations under the License.
         </plugins>
     </reporting>
     <profiles>
-        <profile>
-            <id>flink-1.13</id>
-            <properties>
-                <flink.version>1.13.1</flink.version>
-            </properties>
-        </profile>
-
     </profiles>
 </project>

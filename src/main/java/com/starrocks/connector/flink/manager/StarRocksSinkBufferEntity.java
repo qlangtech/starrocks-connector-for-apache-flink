@@ -14,11 +14,11 @@
 
 package com.starrocks.connector.flink.manager;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.UUID;
-
-import org.apache.flink.shaded.guava30.com.google.common.base.Strings;
 
 public class StarRocksSinkBufferEntity implements Serializable {
 
@@ -78,15 +78,19 @@ public class StarRocksSinkBufferEntity implements Serializable {
         incBatchSize(bts.length);
         buffer.add(bts);
     }
+
     public int getBatchCount() {
         return batchCount;
     }
+
     private void incBatchCount() {
         this.batchCount += 1;
     }
+
     public long getBatchSize() {
         return batchSize;
     }
+
     private void incBatchSize(long batchSize) {
         this.batchSize += batchSize;
     }
@@ -104,7 +108,8 @@ public class StarRocksSinkBufferEntity implements Serializable {
 
     public String createBatchLabel() {
         StringBuilder sb = new StringBuilder();
-        if (!Strings.isNullOrEmpty(labelPrefix)) {
+
+        if (StringUtils.isNotEmpty(labelPrefix)) {
             sb.append(labelPrefix);
         }
         return sb.append(UUID.randomUUID().toString()).toString();
