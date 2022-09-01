@@ -14,19 +14,6 @@
 
 package com.starrocks.connector.flink.manager;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-
-import com.alibaba.fastjson.JSON;
-import com.starrocks.connector.flink.row.sink.StarRocksDelimiterParser;
-import com.starrocks.connector.flink.row.sink.StarRocksSinkOP;
-import com.starrocks.connector.flink.table.sink.StarRocksSinkOptions;
-
-import java.util.HashMap;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
@@ -39,14 +26,28 @@ import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.alibaba.fastjson.JSON;
+import com.starrocks.connector.flink.row.sink.StarRocksDelimiterParser;
+import com.starrocks.connector.flink.row.sink.StarRocksSinkOP;
+import com.starrocks.connector.flink.table.sink.StarRocksSinkOptions;
 
 
 public class StarRocksStreamLoadVisitor implements Serializable {
@@ -81,14 +82,14 @@ public class StarRocksStreamLoadVisitor implements Serializable {
             throw new IOException("None of the hosts in `load_url` could be connected.");
         }
         String loadUrl = new StringBuilder(host)
-            .append("/api/")
-            .append(bufferEntity.getDatabase())
-            .append("/")
-            .append(bufferEntity.getTable())
-            .append("/_stream_load")
-            .toString();
+                .append("/api/")
+                .append(bufferEntity.getDatabase())
+                .append("/")
+                .append(bufferEntity.getTable())
+                .append("/_stream_load")
+                .toString();
         LOG.info(String.format("Start to join batch data: label[%s].", bufferEntity.getLabel()));
-        Map<String, Object> loadResult = doHttpPut(loadUrl, bufferEntity.getLabel(), joinRows(bufferEntity.getBuffer(),  (int) bufferEntity.getBatchSize()));
+        Map<String, Object> loadResult = doHttpPut(loadUrl, bufferEntity.getLabel(), joinRows(bufferEntity.getBuffer(), (int) bufferEntity.getBatchSize()));
         final String keyStatus = "Status";
         if (null == loadResult || !loadResult.containsKey(keyStatus)) {
             throw new IOException("Unable to flush data to StarRocks: unknown result status, usually caused by: 1.authorization or permission related problems. 2.Wrong column_separator or row_delimiter. 3.Column count exceeded the limitation.");
@@ -102,7 +103,7 @@ public class StarRocksStreamLoadVisitor implements Serializable {
                 logMap.put("streamLoadErrorLog", getErrorLog((String) loadResult.get("ErrorURL")));
             }
             throw new StarRocksStreamLoadFailedException(String.format("Failed to flush data to StarRocks, Error " +
-                "response: \n%s\n%s\n", JSON.toJSONString(loadResult), JSON.toJSONString(logMap)), loadResult);
+                    "response: \n%s\n%s\n", JSON.toJSONString(loadResult), JSON.toJSONString(logMap)), loadResult);
         } else if (RESULT_LABEL_EXISTED.equals(loadResult.get(keyStatus))) {
             LOG.error(String.format("Stream Load response: \n%s\n", JSON.toJSONString(loadResult)));
             // has to block-checking the state to get the final result
@@ -114,7 +115,7 @@ public class StarRocksStreamLoadVisitor implements Serializable {
     @SuppressWarnings("unchecked")
     private void checkLabelState(String host, String label) throws IOException {
         int idx = 0;
-        while(true) {
+        while (true) {
             try {
                 TimeUnit.SECONDS.sleep(Math.min(++idx, 5));
             } catch (InterruptedException ex) {
@@ -131,14 +132,14 @@ public class StarRocksStreamLoadVisitor implements Serializable {
                         throw new StarRocksStreamLoadFailedException(String.format("Failed to flush data to StarRocks, Error " +
                                 "could not get the final state of label[%s].\n", label), null);
                     }
-                    Map<String, Object> result = (Map<String, Object>)JSON.parse(EntityUtils.toString(respEntity));
-                    String labelState = (String)result.get("state");
+                    Map<String, Object> result = (Map<String, Object>) JSON.parse(EntityUtils.toString(respEntity));
+                    String labelState = (String) result.get("state");
                     if (null == labelState) {
                         throw new StarRocksStreamLoadFailedException(String.format("Failed to flush data to StarRocks, Error " +
                                 "could not get the final state of label[%s]. response[%s]\n", label, EntityUtils.toString(respEntity)), null);
                     }
                     LOG.info(String.format("Checking label[%s] state[%s]\n", label, labelState));
-                    switch(labelState) {
+                    switch (labelState) {
                         case LAEBL_STATE_VISIBLE:
                         case LAEBL_STATE_COMMITTED:
                             return;
@@ -150,7 +151,7 @@ public class StarRocksStreamLoadVisitor implements Serializable {
                         case RESULT_LABEL_UNKNOWN:
                         default:
                             throw new StarRocksStreamLoadFailedException(String.format("Failed to flush data to StarRocks, Error " +
-                                "label[%s] state[%s]\n", label, labelState), null);
+                                    "label[%s] state[%s]\n", label, labelState), null);
                     }
                 }
             }
@@ -195,7 +196,7 @@ public class StarRocksStreamLoadVisitor implements Serializable {
     private boolean tryHttpConnection(String host) {
         try {
             URL url = new URL(host);
-            HttpURLConnection co =  (HttpURLConnection) url.openConnection();
+            HttpURLConnection co = (HttpURLConnection) url.openConnection();
             co.setConnectTimeout(sinkOptions.getConnectTimeout());
             co.connect();
             co.disconnect();
@@ -234,21 +235,23 @@ public class StarRocksStreamLoadVisitor implements Serializable {
         }
         throw new RuntimeException("Failed to join rows data, unsupported `format` from stream load properties:");
     }
+    // baisui add for test
+    public static Supplier<DefaultRedirectStrategy> redirectStategySetter;
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> doHttpPut(String loadUrl, String label, byte[] data) throws IOException {
         LOG.info(String.format("Executing stream load to: '%s', size: '%s', thread: %d", loadUrl, data.length, Thread.currentThread().getId()));
         final HttpClientBuilder httpClientBuilder = HttpClients.custom()
-            .setRedirectStrategy(new DefaultRedirectStrategy() {
-                @Override
-                protected boolean isRedirectable(String method) {
-                    return true;
-                }
-            });
+                .setRedirectStrategy(redirectStategySetter == null ? new DefaultRedirectStrategy() {
+                    @Override
+                    protected boolean isRedirectable(String method) {
+                        return true;
+                    }
+                } : redirectStategySetter.get());
         try (CloseableHttpClient httpclient = httpClientBuilder.build()) {
             HttpPut httpPut = new HttpPut(loadUrl);
             Map<String, String> props = sinkOptions.getSinkStreamLoadProperties();
-            for (Map.Entry<String,String> entry : props.entrySet()) {
+            for (Map.Entry<String, String> entry : props.entrySet()) {
                 httpPut.setHeader(entry.getKey(), entry.getValue());
             }
             if (!props.containsKey("columns") && ((sinkOptions.supportUpsertDelete() && !__opAutoProjectionInJson) || StarRocksSinkOptions.StreamLoadFormat.CSV.equals(sinkOptions.getStreamLoadFormat()))) {
@@ -270,7 +273,7 @@ public class StarRocksStreamLoadVisitor implements Serializable {
                 HttpEntity respEntity = getHttpEntity(resp);
                 if (respEntity == null)
                     return null;
-                return (Map<String, Object>)JSON.parse(EntityUtils.toString(respEntity));
+                return (Map<String, Object>) JSON.parse(EntityUtils.toString(respEntity));
             }
         }
     }
