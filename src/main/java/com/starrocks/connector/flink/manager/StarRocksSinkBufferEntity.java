@@ -14,8 +14,6 @@
 
 package com.starrocks.connector.flink.manager;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -109,7 +107,7 @@ public class StarRocksSinkBufferEntity implements Serializable {
     public String createBatchLabel() {
         StringBuilder sb = new StringBuilder();
 
-        if (StringUtils.isNotEmpty(labelPrefix)) {
+        if ((labelPrefix) != null) {
             sb.append(labelPrefix);
         }
         return sb.append(UUID.randomUUID().toString()).toString();
