@@ -238,6 +238,7 @@ public class StarRocksStreamLoadVisitor implements Serializable {
     // baisui add for test
     public static Supplier<DefaultRedirectStrategy> redirectStategySetter;
 
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> doHttpPut(String loadUrl, String label, byte[] data) throws IOException {
         LOG.info(String.format("Executing stream load to: '%s', size: '%s', thread: %d", loadUrl, data.length, Thread.currentThread().getId()));
